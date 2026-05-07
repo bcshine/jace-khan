@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학생 맞춤형 성장 대시보드 - Premium Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+        :root {
+            --primary: #6366f1;
+            --secondary: #ec4899;
+            --bg-dark: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            color: #f8fafc;
+            margin: 0;
+            overflow: hidden; /* 슬라이드 제어를 위해 스크롤 숨김 */
+        }
+
+        /* Glassmorphism Card */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Slide Control */
+        .slide {
+            height: 100vh;
+            width: 100vw;
+            display: none;
+            padding: 2rem;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Navigation */
+        .nav-dots {
+            position: fixed;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 100;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .dot.active {
+            background: var(--primary);
+            box-shadow: 0 0 15px var(--primary);
+            height: 30px;
+            border-radius: 10px;
+        }
+
+        /* Custom Chart Mockups */
+        .radar-label { font-size: 10px; fill: #94a3b8; }
+        .roadmap-node { transition: all 0.3s; cursor: pointer; }
+        .roadmap-node:hover { filter: brightness(1.2); }
+
+        /* Animation for progress bars */
+        .progress-bar-fill {
+            transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Dashboard specific UI */
+        .tag {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Persistent Header -->
+    <header class="fixed top-0 left-0 right-0 p-6 flex justify-between items-center z-50 bg-slate-900/40 backdrop-blur-md">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <i class="fas fa-graduation-cap text-2xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight">제이스칸 인사이트</h1>
+                <p class="text-[10px] text-indigo-400 font-bold tracking-widest uppercase">Jace-Khan Insight AI</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-8">
+            <div class="hidden md:flex gap-6 text-slate-400 text-sm font-medium">
+                <span class="text-indigo-400 cursor-pointer hover:text-white" onclick="goToSlide(0)">DASHBOARD</span>
+                <span class="hover:text-white cursor-pointer transition-colors" onclick="goToSlide(1)">PLANNING</span>
+                <span class="hover:text-white cursor-pointer transition-colors" onclick="goToSlide(2)">ANALYTICS</span>
+                <span class="hover:text-white cursor-pointer transition-colors" onclick="goToSlide(3)">MESSAGES</span>
+            </div>
+            <div class="h-8 w-[1px] bg-slate-700"></div>
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <p class="text-sm font-bold text-white">김지민 <span class="text-indigo-400 font-normal ml-1">학생</span></p>
+                    <p class="text-[10px] text-slate-500">ID: 240501 | Grade 11</p>
+                </div>
+                <div class="w-10 h-10 rounded-full border-2 border-indigo-500/30 overflow-hidden">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jimin" alt="avatar">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Slide Navigation Dots -->
+    <div class="nav-dots">
+        <div class="dot active" onclick="goToSlide(0)" title="진단 및 프로필"></div>
+        <div class="dot" onclick="goToSlide(1)" title="처방 및 교육 과정"></div>
+        <div class="dot" onclick="goToSlide(2)" title="히스토리 및 데이터"></div>
+        <div class="dot" onclick="goToSlide(3)" title="소통 및 피드백"></div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="relative pt-24">
+
+        <!-- Slide 1: 진단 및 프로필 -->
+        <section id="slide-0" class="slide active">
+            <div class="grid grid-cols-12 gap-8 h-full items-center">
+                <div class="col-span-4 flex flex-col gap-6">
+                    <div class="glass-card p-8 h-full border-l-4 border-l-blue-500">
+                        <div class="flex items-center gap-3 mb-8">
+                            <div class="p-3 bg-blue-500/20 rounded-lg text-blue-400">
+                                <i class="fas fa-microscope text-2xl"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold">진단 및 프로필</h2>
+                        </div>
+                        
+                        <div class="space-y-8">
+                            <div>
+                                <div class="flex justify-between items-end mb-4">
+                                    <h3 class="text-lg font-bold text-slate-300">다차원 역량 분석</h3>
+                                    <span class="text-xs text-blue-400">상위 5% 수준</span>
+                                </div>
+                                <div class="flex justify-center py-4 bg-slate-800/30 rounded-2xl">
+                                    <svg viewBox="0 0 200 200" class="w-48 h-48 drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                                        <!-- Pentagon background -->
+                                        <polygon points="100,20 180,80 150,170 50,170 20,80" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                                        <polygon points="100,50 160,95 137,150 63,150 40,95" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                                        <!-- Data polygon -->
+                                        <polygon points="100,30 170,85 140,160 70,150 40,90" fill="rgba(59, 130, 246, 0.4)" stroke="#3b82f6" stroke-width="2"/>
+                                        <!-- Labels -->
+                                        <text x="100" y="15" class="radar-label" text-anchor="middle">이해도</text>
+                                        <text x="185" y="80" class="radar-label" text-anchor="start">응용력</text>
+                                        <text x="155" y="180" class="radar-label" text-anchor="middle">암기력</text>
+                                        <text x="45" y="180" class="radar-label" text-anchor="middle">비판적 사고</text>
+                                        <text x="15" y="80" class="radar-label" text-anchor="end">문제 해결</text>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-slate-800/50 p-4 rounded-2xl border border-white/5">
+                                    <p class="text-xs text-slate-400 mb-2">집중력 패턴</p>
+                                    <svg viewBox="0 0 100 30" class="w-full">
+                                        <path d="M0,20 Q10,5 20,20 T40,20 T60,20 T80,10 T100,20" fill="none" stroke="#60a5fa" stroke-width="2"/>
+                                    </svg>
+                                    <p class="text-[10px] text-blue-400 mt-2 text-right">상태: 안정</p>
+                                </div>
+                                <div class="bg-slate-800/50 p-4 rounded-2xl border border-white/5 text-center">
+                                    <p class="text-xs text-slate-400 mb-1">스트레스 내성</p>
+                                    <div class="text-xl font-bold text-emerald-400">보통</div>
+                                    <div class="w-full bg-slate-700 h-1 rounded-full mt-2">
+                                        <div class="bg-emerald-500 h-full w-[65%] rounded-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-8 grid grid-cols-2 gap-6 h-full py-8">
+                    <div class="glass-card p-6 flex flex-col justify-center items-center text-center">
+                        <div class="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mb-4 border border-indigo-500/20">
+                            <i class="fas fa-eye text-3xl text-indigo-400"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">학습 성향: 시각적</h3>
+                        <p class="text-sm text-slate-400 max-w-[200px]">도표와 영상을 활용한 학습 시 효율이 50% 향상됩니다.</p>
+                    </div>
+                    <div class="glass-card p-6 flex flex-col justify-center items-center text-center">
+                        <div class="w-20 h-20 bg-pink-500/10 rounded-full flex items-center justify-center mb-4 border border-pink-500/20">
+                            <i class="fas fa-bullseye text-3xl text-pink-400"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">단기 목표: 퀴즈 90%</h3>
+                        <p class="text-sm text-slate-400 max-w-[200px]">이번 주 주간 퀴즈 달성률 85% 진행 중입니다.</p>
+                    </div>
+                    <div class="glass-card p-6 col-span-2 relative overflow-hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold">성격 및 기질 프로필</h3>
+                            <span class="tag bg-indigo-500/20 text-indigo-300">INTJ Type</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-4">
+                            <div class="p-4 bg-white/5 rounded-xl text-center">
+                                <div class="text-indigo-400 font-bold text-lg">92%</div>
+                                <div class="text-[10px] text-slate-500">자기주도성</div>
+                            </div>
+                            <div class="p-4 bg-white/5 rounded-xl text-center">
+                                <div class="text-pink-400 font-bold text-lg">78%</div>
+                                <div class="text-[10px] text-slate-500">탐구의욕</div>
+                            </div>
+                            <div class="p-4 bg-white/5 rounded-xl text-center">
+                                <div class="text-emerald-400 font-bold text-lg">65%</div>
+                                <div class="text-[10px] text-slate-500">협동성</div>
+                            </div>
+                            <div class="p-4 bg-white/5 rounded-xl text-center">
+                                <div class="text-amber-400 font-bold text-lg">88%</div>
+                                <div class="text-[10px] text-slate-500">성취동기</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 2: 처방 및 교육 과정 -->
+        <section id="slide-1" class="slide">
+            <div class="grid grid-cols-12 gap-8 h-full items-center">
+                <div class="col-span-5">
+                    <div class="glass-card p-8 border-l-4 border-l-emerald-500 h-[70vh] flex flex-col">
+                        <div class="flex items-center justify-between mb-8">
+                            <div class="flex items-center gap-3">
+                                <div class="p-3 bg-emerald-500/20 rounded-lg text-emerald-400">
+                                    <i class="fas fa-brain text-2xl"></i>
+                                </div>
+                                <h2 class="text-2xl font-bold">처방 및 로드맵</h2>
+                            </div>
+                            <span class="tag bg-emerald-500/20 text-emerald-300 animate-pulse">AI Optimization Active</span>
+                        </div>
+
+                        <div class="flex-1 relative mt-4">
+                            <p class="text-sm font-bold text-slate-400 mb-6">AI 기반 추천 맞춤 경로</p>
+                            
+                            <!-- Road Map Visualization -->
+                            <div class="relative h-64 border-l-2 border-dashed border-slate-700 ml-6 space-y-12">
+                                <div class="relative pl-8">
+                                    <div class="absolute -left-[11px] top-1 w-5 h-5 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
+                                    <div class="bg-slate-800/50 p-4 rounded-xl border border-white/5">
+                                        <p class="text-xs text-indigo-400 font-bold mb-1">CURRENT</p>
+                                        <h4 class="font-bold">대수학 5단원: 다항식의 연산</h4>
+                                        <p class="text-[10px] text-slate-500 mt-1">예상 소요 시간: 4시간 | 중요도: ★★★★★</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="relative pl-8">
+                                    <div class="absolute -left-[11px] top-1 w-5 h-5 bg-slate-700 rounded-full"></div>
+                                    <div class="bg-slate-800/20 p-4 rounded-xl border border-white/5 opacity-60">
+                                        <p class="text-xs text-slate-500 font-bold mb-1">NEXT PHASE</p>
+                                        <h4 class="font-bold">미적분학 기초 (Advance Course)</h4>
+                                        <p class="text-[10px] text-slate-500 mt-1">심화 개념 연결 추천</p>
+                                    </div>
+                                    <!-- Branch line mockup -->
+                                    <div class="absolute -left-[2px] top-10 w-12 h-20 border-l-2 border-b-2 border-dashed border-slate-700 rounded-bl-xl"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-auto bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                            <p class="text-[11px] text-amber-400 leading-relaxed italic">
+                                <i class="fas fa-lightbulb mr-1"></i> AI 처방: 최근 오답 데이터를 분석한 결과, '계산 실수'보다 '개념 정의' 혼동이 발견되었습니다. 5.2단원 복습 영상을 우선 시청하세요.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-7 h-[70vh]">
+                    <div class="glass-card p-8 h-full flex flex-col">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold">가변적 지능형 진도표</h3>
+                            <div class="flex gap-2">
+                                <span class="tag bg-slate-800 text-slate-400">WEEKLY</span>
+                                <span class="tag bg-indigo-500 text-white">DAY VIEW</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-1 grid grid-rows-6 gap-2">
+                            <div class="grid grid-cols-8 gap-2 border-b border-white/5 pb-2">
+                                <div class="text-[10px] text-slate-500 uppercase flex items-center">Time</div>
+                                <div class="col-span-7 grid grid-cols-7 gap-2">
+                                    <div class="text-[10px] text-slate-500 text-center">MON</div>
+                                    <div class="text-[10px] text-slate-500 text-center">TUE</div>
+                                    <div class="text-[10px] text-slate-500 text-center text-indigo-400">WED (TODAY)</div>
+                                    <div class="text-[10px] text-slate-500 text-center">THU</div>
+                                    <div class="text-[10px] text-slate-500 text-center">FRI</div>
+                                    <div class="text-[10px] text-slate-500 text-center">SAT</div>
+                                    <div class="text-[10px] text-slate-500 text-center">SUN</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Schedule rows -->
+                            <div class="grid grid-cols-8 gap-2">
+                                <div class="text-[10px] text-slate-500 flex items-center italic">09:00</div>
+                                <div class="col-span-7 grid grid-cols-7 gap-2">
+                                    <div class="bg-indigo-500/20 border border-indigo-500/30 rounded p-1 text-[9px] text-center">Math</div>
+                                    <div class="bg-pink-500/20 border border-pink-500/30 rounded p-1 text-[9px] text-center">Eng</div>
+                                    <div class="bg-indigo-500 border border-indigo-400 rounded p-1 text-[9px] text-center font-bold">Math 5.2</div>
+                                    <div class="bg-slate-800 rounded p-1"></div>
+                                    <div class="bg-indigo-500/20 border border-indigo-500/30 rounded p-1 text-[9px] text-center">Math</div>
+                                    <div class="bg-slate-800 rounded p-1"></div>
+                                    <div class="bg-slate-800 rounded p-1"></div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-8 gap-2">
+                                <div class="text-[10px] text-slate-500 flex items-center italic">11:00</div>
+                                <div class="col-span-7 grid grid-cols-7 gap-2">
+                                    <div class="bg-emerald-500/20 border border-emerald-500/30 rounded p-1 text-[9px] text-center">Sci</div>
+                                    <div class="bg-slate-800 rounded p-1"></div>
+                                    <div class="bg-emerald-500/20 border border-emerald-500/30 rounded p-1 text-[9px] text-center">Sci</div>
+                                    <div class="bg-emerald-500/20 border border-emerald-500/30 rounded p-1 text-[9px] text-center">Sci</div>
+                                    <div class="bg-slate-800 rounded p-1"></div>
+                                    <div class="bg-amber-500/20 border border-amber-500/30 rounded p-1 text-[9px] text-center">Hist</div>
+                                    <div class="bg-slate-800 rounded p-1"></div>
+                                </div>
+                            </div>
+                            <div class="col-span-8 bg-slate-800/40 rounded-xl p-4 mt-4 flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] text-slate-500 uppercase">Current Progress</p>
+                                    <p class="font-bold">STATUS: AHEAD OF SCHEDULE (15%)</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-[10px] text-slate-500 uppercase">Estimated Completion</p>
+                                    <p class="font-bold text-indigo-400">JULY 15, 2026</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 3: 히스토리 및 데이터 -->
+        <section id="slide-2" class="slide">
+            <div class="max-w-6xl mx-auto w-full flex flex-col gap-8 h-full py-8">
+                <div class="flex justify-between items-end">
+                    <div class="flex items-center gap-4">
+                        <div class="p-4 bg-amber-500/20 rounded-2xl text-amber-400">
+                            <i class="fas fa-chart-bar text-3xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-bold">히스토리 및 학습 데이터</h2>
+                            <p class="text-slate-400">최근 30일간의 학습 지표 및 성과 추이</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="glass-card px-6 py-3 text-center">
+                            <p class="text-[10px] text-slate-500 uppercase">Total Learning</p>
+                            <p class="text-2xl font-bold text-amber-400">128.5H</p>
+                        </div>
+                        <div class="glass-card px-6 py-3 text-center">
+                            <p class="text-[10px] text-slate-500 uppercase">Attendance</p>
+                            <p class="text-2xl font-bold text-emerald-400">99.2%</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-6 flex-1">
+                    <div class="glass-card p-8 col-span-2 overflow-hidden flex flex-col">
+                        <div class="flex justify-between items-center mb-8">
+                            <h3 class="text-lg font-bold">과목별 학습 시간 분포</h3>
+                            <div class="flex gap-2">
+                                <div class="flex items-center gap-1"><div class="w-3 h-3 bg-indigo-500 rounded-full"></div><span class="text-[10px] text-slate-400">Math</span></div>
+                                <div class="flex items-center gap-1"><div class="w-3 h-3 bg-pink-500 rounded-full"></div><span class="text-[10px] text-slate-400">English</span></div>
+                                <div class="flex items-center gap-1"><div class="w-3 h-3 bg-emerald-500 rounded-full"></div><span class="text-[10px] text-slate-400">Science</span></div>
+                            </div>
+                        </div>
+                        <div class="flex-1 flex items-end gap-6 pb-4">
+                            <div class="flex-1 flex flex-col items-center gap-2">
+                                <div class="w-full bg-slate-800 rounded-xl relative overflow-hidden h-48">
+                                    <div class="absolute bottom-0 w-full bg-indigo-500 h-[85%] progress-bar-fill"></div>
+                                </div>
+                                <span class="text-xs text-slate-400">MATH</span>
+                            </div>
+                            <div class="flex-1 flex flex-col items-center gap-2">
+                                <div class="w-full bg-slate-800 rounded-xl relative overflow-hidden h-48">
+                                    <div class="absolute bottom-0 w-full bg-pink-500 h-[65%] progress-bar-fill"></div>
+                                </div>
+                                <span class="text-xs text-slate-400">ENG</span>
+                            </div>
+                            <div class="flex-1 flex flex-col items-center gap-2">
+                                <div class="w-full bg-slate-800 rounded-xl relative overflow-hidden h-48">
+                                    <div class="absolute bottom-0 w-full bg-emerald-500 h-[45%] progress-bar-fill"></div>
+                                </div>
+                                <span class="text-xs text-slate-400">SCI</span>
+                            </div>
+                            <div class="flex-1 flex flex-col items-center gap-2">
+                                <div class="w-full bg-slate-800 rounded-xl relative overflow-hidden h-48">
+                                    <div class="absolute bottom-0 w-full bg-amber-500 h-[30%] progress-bar-fill"></div>
+                                </div>
+                                <span class="text-xs text-slate-400">HIST</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card p-8 flex flex-col">
+                        <h3 class="text-lg font-bold mb-6">데이터 인사이트</h3>
+                        <div class="space-y-6 flex-1">
+                            <div class="bg-slate-800/40 p-4 rounded-xl border border-white/5">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-xs text-slate-400">Q&A 참여도</span>
+                                    <span class="text-xs font-bold text-indigo-400">Very High</span>
+                                </div>
+                                <div class="text-xl font-bold">45 <span class="text-sm font-normal text-slate-500">questions/month</span></div>
+                            </div>
+                            <div class="bg-slate-800/40 p-4 rounded-xl border border-white/5">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-xs text-slate-400">최고 집중 시간대</span>
+                                    <span class="text-xs font-bold text-pink-400">20:00 - 22:00</span>
+                                </div>
+                                <div class="text-xl font-bold">Night Owl <span class="text-sm font-normal text-slate-500">Pattern</span></div>
+                            </div>
+                            <div class="bg-slate-800/40 p-4 rounded-xl border border-white/5">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-xs text-slate-400">과제 완료율</span>
+                                    <span class="text-xs font-bold text-emerald-400">98%</span>
+                                </div>
+                                <div class="text-xl font-bold">Top Tier <span class="text-sm font-normal text-slate-500">Consistency</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 4: 소통 및 피드백 -->
+        <section id="slide-3" class="slide">
+            <div class="grid grid-cols-12 gap-8 h-full items-stretch">
+                <!-- Timeline Section -->
+                <div class="col-span-4 flex flex-col gap-6">
+                    <div class="glass-card p-8 flex-1 border-t-4 border-t-pink-500">
+                        <div class="flex items-center gap-3 mb-8">
+                            <div class="p-3 bg-pink-500/20 rounded-lg text-pink-400">
+                                <i class="fas fa-heart text-2xl"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold">소통 및 피드백</h2>
+                        </div>
+
+                        <div class="space-y-8">
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-400 mb-4 uppercase">성장 타임라인 (최근 5개월)</h3>
+                                <div class="relative h-40 flex items-end gap-2 px-2">
+                                    <div class="absolute inset-0 flex flex-col justify-between py-2 border-l border-slate-700">
+                                        <div class="w-full border-t border-slate-700/50"></div>
+                                        <div class="w-full border-t border-slate-700/50"></div>
+                                        <div class="w-full border-t border-slate-700/50"></div>
+                                    </div>
+                                    <div class="flex-1 bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-t-lg h-[40%] relative group">
+                                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 px-2 py-1 rounded text-[9px] opacity-0 group-hover:opacity-100 transition-opacity">72점</div>
+                                    </div>
+                                    <div class="flex-1 bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-t-lg h-[60%] relative group">
+                                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 px-2 py-1 rounded text-[9px] opacity-0 group-hover:opacity-100 transition-opacity">78점</div>
+                                    </div>
+                                    <div class="flex-1 bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-t-lg h-[55%] relative group">
+                                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 px-2 py-1 rounded text-[9px] opacity-0 group-hover:opacity-100 transition-opacity">75점</div>
+                                    </div>
+                                    <div class="flex-1 bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-t-lg h-[85%] relative group">
+                                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 px-2 py-1 rounded text-[9px] opacity-0 group-hover:opacity-100 transition-opacity">92점</div>
+                                    </div>
+                                    <div class="flex-1 bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-t-lg h-[95%] relative group">
+                                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 px-2 py-1 rounded text-[9px] opacity-0 group-hover:opacity-100 transition-opacity">98점</div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between mt-2 px-2">
+                                    <span class="text-[9px] text-slate-500 uppercase tracking-tighter">Jan</span>
+                                    <span class="text-[9px] text-slate-500 uppercase tracking-tighter">Feb</span>
+                                    <span class="text-[9px] text-slate-500 uppercase tracking-tighter">Mar</span>
+                                    <span class="text-[9px] text-slate-500 uppercase tracking-tighter">Apr</span>
+                                    <span class="text-[9px] text-slate-500 uppercase tracking-tighter font-bold text-indigo-400">May</span>
+                                </div>
+                            </div>
+
+                            <div class="p-6 bg-slate-800/50 rounded-2xl border border-white/5">
+                                <h4 class="text-xs font-bold text-slate-300 mb-4 underline decoration-pink-500 decoration-2 underline-offset-4">최신 강사 코멘트</h4>
+                                <div class="flex gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-slate-700 flex-shrink-0 flex items-center justify-center font-bold text-sm">T</div>
+                                    <div>
+                                        <p class="text-xs text-slate-300 leading-relaxed italic">
+                                            "지민 학생은 이번 달 대수학 심화 개념 이해도가 비약적으로 상승했습니다. 다만 계산 과정에서의 사소한 실수들이 보이니, 검토 시간을 5분 더 확보하는 습관을 들이면 완벽할 것 같습니다."
+                                        </p>
+                                        <p class="text-[10px] text-slate-500 mt-2">2026.05.07 | 박민수 강사</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feed & Archive -->
+                <div class="col-span-8 flex flex-col gap-6">
+                    <div class="grid grid-cols-2 gap-6 h-1/2">
+                        <div class="glass-card p-6 relative overflow-hidden">
+                            <h3 class="font-bold mb-4 flex items-center gap-2">
+                                <i class="fas fa-times-circle text-rose-400"></i> 오답 원인 분석
+                            </h3>
+                            <div class="space-y-4 pt-2">
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-[11px] text-slate-400">
+                                        <span>개념 숙지 미흡</span>
+                                        <span class="text-white">65%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                        <div class="bg-rose-500 h-full w-[65%] rounded-full"></div>
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-[11px] text-slate-400">
+                                        <span>계산 및 표기 실수</span>
+                                        <span class="text-white">25%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                        <div class="bg-amber-500 h-full w-[25%] rounded-full"></div>
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-[11px] text-slate-400">
+                                        <span>시간 부족</span>
+                                        <span class="text-white">10%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                        <div class="bg-blue-500 h-full w-[10%] rounded-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="glass-card p-6">
+                            <h3 class="font-bold mb-4 flex items-center gap-2">
+                                <i class="fas fa-archive text-amber-400"></i> 오답 노트 아카이브
+                            </h3>
+                            <div class="space-y-2 overflow-y-auto h-32 pr-2 custom-scrollbar">
+                                <div class="bg-white/5 p-2 rounded flex justify-between items-center text-[11px]">
+                                    <span class="text-slate-300">이차방정식의 근과 계수</span>
+                                    <span class="text-indigo-400">Review Done</span>
+                                </div>
+                                <div class="bg-white/5 p-2 rounded flex justify-between items-center text-[11px]">
+                                    <span class="text-slate-300">로그의 성질과 공식</span>
+                                    <span class="text-amber-400">Pending</span>
+                                </div>
+                                <div class="bg-white/5 p-2 rounded flex justify-between items-center text-[11px]">
+                                    <span class="text-slate-300">삼각함수의 주기와 그래프</span>
+                                    <span class="text-amber-400">Pending</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card p-8 h-1/2 flex flex-col justify-center bg-indigo-500/10">
+                        <div class="flex items-center gap-6">
+                            <div class="w-20 h-20 rounded-full bg-indigo-500/20 flex items-center justify-center">
+                                <i class="fas fa-shield-halved text-4xl text-indigo-400"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-white mb-2">프리미엄 컨설팅 대기 중</h3>
+                                <p class="text-slate-400 mb-4">지민 학생의 최근 급격한 성장을 바탕으로 '미적분 선행 학습'에 대한 부모님 상담을 추천합니다.</p>
+                                <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl font-bold transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-indigo-600/30">상담 예약하기</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer / Slide Indicators -->
+    <footer class="fixed bottom-0 left-0 right-0 p-6 flex justify-between items-center z-50 text-[10px] text-slate-500 uppercase tracking-widest">
+        <div>© 2026 JACE-KHAN INSIGHT AI - PROPRIETARY DEMO SYSTEM</div>
+        <div class="flex gap-8">
+            <span>Scroll or use side dots/menu to navigate</span>
+            <span>Current Module: <span id="current-module-name" class="text-indigo-400 font-bold">진단 및 프로필</span></span>
+        </div>
+    </footer>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const dots = document.querySelectorAll('.dot');
+        const moduleNames = ["진단 및 프로필", "처방 및 교육 과정", "히스토리 및 데이터", "소통 및 피드백"];
+        const currentModuleNameEl = document.getElementById('current-module-name');
+
+        function goToSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            dots[currentSlide].classList.remove('active');
+            
+            // Update menu active state
+            const menuItems = document.querySelectorAll('.hidden.md\\:flex span');
+            menuItems.forEach((item, index) => {
+                if (index === n) {
+                    item.classList.add('text-indigo-400');
+                    item.classList.remove('text-slate-400');
+                } else {
+                    item.classList.remove('text-indigo-400');
+                    item.classList.add('text-slate-400');
+                }
+            });
+
+            currentSlide = n;
+            
+            slides[currentSlide].classList.add('active');
+            dots[currentSlide].classList.add('active');
+            currentModuleNameEl.innerText = moduleNames[currentSlide];
+        }
+
+        // Mouse Wheel Interaction for Slides
+        window.addEventListener('wheel', (e) => {
+            if (e.deltaY > 0) {
+                if (currentSlide < slides.length - 1) goToSlide(currentSlide + 1);
+            } else {
+                if (currentSlide > 0) goToSlide(currentSlide - 1);
+            }
+        });
+
+        // Keyboard Interaction
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                if (currentSlide < slides.length - 1) goToSlide(currentSlide + 1);
+            } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                if (currentSlide > 0) goToSlide(currentSlide - 1);
+            }
+        });
+    </script>
+</body>
+</html>
